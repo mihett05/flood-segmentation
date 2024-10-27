@@ -11,3 +11,30 @@
 1. Разработка модели на основе GAN
 
 ## Структура проекта
+- /smp.py - скрипт для запуска семантической сегментации на основе unet (имеет аргументы train | test | predict --path <path>)
+  - SemanticSegmentationDataset - класс датасета для тренировки
+  - TilesDataset - класс датасета для предикта
+  - SegmentationModel - модель сегментации для Lightning
+  - train - запуск обучения
+  - test - запуск теста
+  - predict - создание предсказания в ./data/preds/image.tif
+  - create_dataloaders - создания train и val загрузчиков
+  - create_test_dataloader - создание test загрузчика
+  - create_predict_dataloader - создание predict загрузчика
+  - load_segmentation_module - загрузка модели сегментации
+- /split_images.py - функции разделения изображения на тайлы и их объединения, а также скрипт для разделения исходных изображений на тайлы
+- /split_dataset.py - скрипт для разделения исходного набора тайлов на train, val и test выборки
+- /view.py - просмотр geotiff изображений
+- /pairs.py - наложение масок на исходные изображения
+
+## Использованные технологии
+
+### Библиотеки
+- Pytorch
+- Segmentation Models Pytorch
+- Pytorch Lightning
+- rasterio
+
+### Модели
+- Unet
+- CNN

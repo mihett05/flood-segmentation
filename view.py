@@ -8,6 +8,7 @@ tif_file_path = argv[1] if len(argv) > 1 else "input_image.tif"
 
 n = 10
 
+
 # Open the TIFF file with rasterio
 with rasterio.open(tif_file_path) as dataset:
     # Check the number of channels
@@ -19,7 +20,7 @@ with rasterio.open(tif_file_path) as dataset:
 # Plot each channel individually
 fig, axes = plt.subplots(2, 5, figsize=(20, 8))
 fig.suptitle(f"{n}-Channel TIFF Image", fontsize=16)
-
+print(channels.shape)
 for i in range(n):
     row, col = divmod(i, 5)
     ax = axes[row, col]

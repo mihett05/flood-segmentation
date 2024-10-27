@@ -160,14 +160,10 @@ def merge_tiles(
     min_x, min_y, max_x, max_y = None, None, None, None
     for src in sources:
         bounds = src.bounds
-        if min_x is None or bounds.left < min_x:
-            min_x = bounds.left
-        if min_y is None or bounds.bottom < min_y:
-            min_y = bounds.bottom
-        if max_x is None or bounds.right > max_x:
-            max_x = bounds.right
-        if max_y is None or bounds.top > max_y:
-            max_y = bounds.top
+        min_x = bounds.left if min_x is None else min(min_x, bounds.left)
+        min_y = bounds.bottom if min_y is None else min(min_y, bounds.bottom)
+        max_x = bounds.right if max_x is None else max(max_x, bounds.right)
+        max_y = bounds.top if max_y is None else max(max_y, bounds.top)
 
     # Calculate the shape of the merged image, considering tile size and overlap
     pixel_size_x = sources[0].transform[0]
@@ -180,7 +176,7 @@ def merge_tiles(
     merged_data = np.zeros(
         (sources[0].count, merged_height, merged_width), dtype=np.float32
     )
-    count_data = np.zeros((merged_height, merged_width), dtype=np.uint16)
+    count_data = np.zeros((merged_height, merged_width), dtype=np.float32)
 
     # Iterate over each source and add its data to the merged arrays, considering tile size and overlap
     for src in sources:
@@ -191,9 +187,9 @@ def merge_tiles(
 
         # Adjust for overlap and tile size
         row_start = max(0, row_off)
-        row_end = min(merged_height, row_off + tile_size - overlap)
+        row_end = min(merged_height, row_off + tile_size)
         col_start = max(0, col_off)
-        col_end = min(merged_width, col_off + tile_size - overlap)
+        col_end = min(merged_width, col_off + tile_size)
 
         tile_row_end = min(height, row_end - row_start)
         tile_col_end = min(width, col_end - col_start)
@@ -208,11 +204,10 @@ def merge_tiles(
             col_start : col_start + tile_col_end,
         ] += 1
 
-    # Ensure no division by zero occurs
+    # Avoid black lines by averaging overlapping pixels
     count_data[count_data == 0] = 1
-    merged_data = np.true_divide(
-        merged_data, count_data, where=count_data != 0
-    ).astype(np.uint16)
+    merged_data = (merged_data / count_data).astype(np.uint8)
+    merged_data = np.where(merged_data >= 127.5, 255, 0).astype(np.uint8)
 
     # Use the profile from the first tile to set up the output file
     profile = sources[0].profile
@@ -221,8 +216,10 @@ def merge_tiles(
             "height": merged_height,
             "width": merged_width,
             "transform": merged_transform,
-            "dtype": "uint16",
+            "dtype": "uint8",
             "count": merged_data.shape[0],
+            "bounds": (min_x, min_y, max_x, max_y),
+            "crs": sources[0].crs,
         }
     )
 

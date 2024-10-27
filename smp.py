@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 
 import numpy as np
 import pytorch_lightning as pl
@@ -140,10 +141,9 @@ class TilesDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        return image, self.image_files[idx]  # Return file name for saving
+        return image, self.image_files[idx]
 
 
-# Define model and the training module (as before)
 class SegmentationModel(pl.LightningModule):
     def __init__(self, model, loss_fn, lr=0.0001):
         super().__init__()
@@ -216,10 +216,8 @@ def test():
 
 
 def predict(path: str):
-    # TODO: fix merge line
-    # TODO: add geo data in tif
-    if os.path.extsep("./data/preds"):
-        os.removedirs("./data/preds")
+    if os.path.exists("./data/preds"):
+        shutil.rmtree("./data/preds")
     os.makedirs("./data/preds", exist_ok=True)
     split_image(
         image_path=path,
@@ -247,8 +245,9 @@ def predict(path: str):
                 predicted = segmentation_module(image)
                 predicted = resize(predicted, (src_shape[0], src_shape[1]))
                 predicted = torch.sigmoid(predicted).squeeze().cpu().numpy()
-
-                predicted_binary = (predicted > 0.5).astype(np.uint8) * 255
+                predicted[predicted >= 0.5] = 1.0
+                predicted[predicted < 0.5] = 0.0
+                predicted_binary = predicted.astype(np.uint8) * 255
                 with rasterio.open(
                     "./data/preds/masks/" + file_names[i],
                     "w",
