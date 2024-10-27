@@ -1,0 +1,9 @@
+numpy
+pytorch-lightning
+torch
+torchvision
+torchaudio
+torchmetrics
+rasterio
+tqdm
+matplotlib
