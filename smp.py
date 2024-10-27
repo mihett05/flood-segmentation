@@ -219,13 +219,14 @@ def predict(path: str):
     if os.path.exists("./data/preds"):
         shutil.rmtree("./data/preds")
     os.makedirs("./data/preds", exist_ok=True)
-    split_image(
+    src_profile = split_image(
         image_path=path,
         output_folder="./data/preds",
         tile_size=256,
         overlap=32,
         image_id=os.path.basename(path),
     )
+    print(src_profile.__dict__)
     predict_loader = create_predict_dataloader()
     _, segmentation_module = load_segmentation_module()
 
@@ -266,6 +267,7 @@ def predict(path: str):
         output_path="./data/preds/image.tif",
         tile_size=256,
         overlap=32,
+        src_profile=src_profile,
     )
 
 

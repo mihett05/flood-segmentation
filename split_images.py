@@ -83,7 +83,7 @@ def split_image(
     tile_size: int = 512,
     overlap: int = 128,
     image_id: str = "0",
-) -> None:
+):
     """
     Split a large GeoTIFF image and its corresponding mask (if provided) into tiles with overlap
     and save them.
@@ -126,6 +126,7 @@ def split_image(
         else:
             for idx, window in tqdm(enumerate(tiles)):
                 save_tile(src_image, window, images_folder, idx, image_id)
+        return src_image.profile
 
 
 def merge_tiles(
@@ -133,6 +134,7 @@ def merge_tiles(
     output_path: str,
     tile_size: int = 512,
     overlap: int = 128,
+    src_profile=None,
 ) -> None:
     """
     Merge image tiles into a single GeoTIFF file, considering overlapping regions.
@@ -207,19 +209,24 @@ def merge_tiles(
     # Avoid black lines by averaging overlapping pixels
     count_data[count_data == 0] = 1
     merged_data = (merged_data / count_data).astype(np.uint8)
-    merged_data = np.where(merged_data >= 127.5, 255, 0).astype(np.uint8)
+    merged_data = np.where(merged_data >= 127.5, 255, 0).astype(np.uint16)
 
     # Use the profile from the first tile to set up the output file
     profile = sources[0].profile
     profile.update(
         {
+            "driver": "GTiff",
+            "nodata": src_profile["nodata"],
             "height": merged_height,
             "width": merged_width,
-            "transform": merged_transform,
-            "dtype": "uint8",
+            "transform": src_profile["transform"],
+            "dtype": "uint16",
             "count": merged_data.shape[0],
             "bounds": (min_x, min_y, max_x, max_y),
-            "crs": sources[0].crs,
+            "crs": src_profile["crs"],
+            "blockysize": src_profile["blockysize"],
+            "tiled": src_profile["tiled"],
+            "interleave": src_profile["interleave"],
         }
     )
 
